@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CypherMesh Dashboard</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        h1 { color: #007acc; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 14px; }
+        th { background-color: #f0f0f0; }
+        .valid { color: green; }
+        .invalid { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🕸️ CypherMesh — Eventi Recenti</h1>
+    <table>
+        <tr>
+            <th>Timestamp</th>
+            <th>Source IP</th>
+            <th>Tipo Minaccia</th>
+            <th>Severità</th>
+            <th>Firma</th>
+        </tr>
+        {% for event in events %}
+        <tr>
+            <td>{{ event[4] }}</td>
+            <td>{{ event[1] }}</td>
+            <td>{{ event[2] }}</td>
+            <td>{{ event[3] }}</td>
+            <td class="{{ 'valid' if event[6] else 'invalid' }}">{{ '✅' if event[6] else '❌' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>🔐 Reputazione dei Peer</h2>
+    <table>
+        <tr>
+            <th>Chiave Pubblica (troncata)</th>
+            <th>Punteggio</th>
+        </tr>
+        {% for rep in reps %}
+        <tr>
+            <td>{{ rep[0][:50] }}...</td>
+            <td>{{ rep[1] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

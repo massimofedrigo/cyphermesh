@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment (facoltativo se tieni l'env fuori)
+.env/
+venv/
+ENV/
+env/
+.venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# SQLite DB e dati locali
+cyphermesh.db
+*.sqlite
+*.sqlite3
+
+# Chiavi private
+keys/
+*.pem
+*.key
+
+# Config utente
+~/.cyphermesh/
+
+# Log files
+*.log
+
+# IDE/editor specific
+.vscode/
+.idea/
+*.swp
+.DS_Store
