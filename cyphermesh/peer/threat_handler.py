@@ -1,6 +1,6 @@
 import json
 from cyphermesh.crypto import verify_signature
-from cyphermesh.web.db import save_event, update_reputation, get_reputation
+from cyphermesh.db.events import save_event, update_reputation, get_reputation
 from cyphermesh.logger import logger
 
 
