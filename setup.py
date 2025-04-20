@@ -11,9 +11,9 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "cyphermesh-install = cli.install:main",
-            "cyphermesh-peer = cli.run_peer:main",
-            "cyphermesh-discovery-server = cli.run_discovery_server:main"
+            "cyphermesh-run-peer = cli.run_peer:main",
+            "cyphermesh-reset = cli.reset:main",
+            "cyphermesh-add-peer = cli.add_peer:main",
         ]
     },
     author="Massimo Fedrigo",

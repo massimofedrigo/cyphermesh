@@ -1,5 +1,5 @@
 from flask import Flask, render_template
-from cyphermesh.web.db import init_db, get_events, get_reputations
+from cyphermesh.db.events import init_db, get_events, get_reputations
 
 app = Flask(__name__)
 
