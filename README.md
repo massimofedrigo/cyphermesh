@@ -39,18 +39,19 @@ Questo progetto crea una rete P2P in cui ogni peer:
 
 ## 📁 Struttura dei File
 
-| File                  | Descrizione                                                                 |
-|-----------------------|-----------------------------------------------------------------------------|
-| `core.py`             | Punto di partenza per avviare un peer                                      |
-| `peer_network.py`     | Logica di rete tra peer: invio, ricezione, gestione connessioni            |
-| `discovery_server.py` | Server centrale per registrare i peer (opzionale ma consigliato)         |
-| `discovery_client.py` | Client per registrazione e aggiornamento dal discovery server            |
-| `threat_handler.py`   | Verifica eventi firmati, aggiorna reputazione                             |
-| `db.py`               | Gestione del database SQLite (eventi e reputazione)                        |
-| `crypto.py`           | Generazione chiavi RSA, firma e verifica digitale                          |
-| `protocol.py`         | Costruzione e parsing dei messaggi JSON                                    |
-| `event.py`            | Struttura dati degli eventi di minaccia                                    |
-| `test_network.py`     | Esegue una simulazione completa: discovery + peer + evento                 |
+| File/Cartella                | Descrizione                                                                 |
+|------------------------------|-----------------------------------------------------------------------------|
+| `cyphermesh/crypto.py`       | Generazione delle chiavi RSA, firma e verifica digitale                     |
+| `cyphermesh/event.py`        | Creazione e identificazione univoca degli eventi di sicurezza               |
+| `cyphermesh/protocol.py`     | Costruzione e parsing dei messaggi JSON scambiati tra peer                  |
+| `cyphermesh/db/peers.py`     | Gestione della rubrica dei peer (SQLite) e bootstrap iniziale               |
+| `cyphermesh/db/events.py`    | Persistenza di eventi e reputazioni nel database SQLite                     |
+| `cyphermesh/peer/peer.py`    | Server TCP del peer, gestione HELLO/HELLO_ACK e aggiornamento dei peer      |
+| `cyphermesh/peer/threat_handler.py` | Verifica delle firme degli eventi e aggiornamento reputazioni        |
+| `cyphermesh/web/app.py`      | Piccola dashboard Flask per visualizzare eventi e reputazioni               |
+| `cli/run_peer.py`            | CLI per avviare un peer locale                                              |
+| `cli/add_peer.py`            | CLI per aggiungere manualmente un peer al database locale                   |
+| `cli/reset.py`               | CLI per ripulire configurazione e database                                  |
 
 ---
 
@@ -88,36 +89,35 @@ pip install .
 ```
 Questo comando installerà `cyphermesh` e renderà disponibili i seguenti comandi CLI:
 
-- `cyphermesh-install`
-- `cyphermesh-peer`
-- `cyphermesh-discovery-server`
+- `cyphermesh-run-peer`: avvia un peer locale
+- `cyphermesh-add-peer`: aggiunge un peer alla rubrica locale (es. dopo il bootstrap)
+- `cyphermesh-reset`: pulisce configurazione e database in `~/.cyphermesh`
 
 ## ⚙️ Utilizzo
 
-### 🔧 Avvio della procedura guidata
-Per configurare l'applicazione (come discovery server o peer):
-```bash
-cyphermesh-install
-```
-
-### 📡 Avvio del Discovery Server
-Dopo la configurazione, per avviare il discovery server:
-```bash
-cyphermesh-discovery_server-server
-```
-Assicurati che il file `discovery_server_config.json` sia presente nella directory corrente.
-
 ### 🤝 Avvio di un Peer
-Dopo aver configurato il peer con il relativo file `peer_config.json`, puoi avviarlo con:
+Per avviare un peer locale (con salvataggio della configurazione in `~/.cyphermesh/peer_config.json` se mancante):
 ```bash
-cyphermesh-peer
+cyphermesh-run-peer --ip 127.0.0.1 --port 9001
 ```
-Il peer si registrerà automaticamente al discovery server e inizierà a comunicare con la rete.
+Il comando gestisce automaticamente la generazione delle chiavi RSA e il bootstrap verso eventuali peer già presenti nel database.
+
+### ➕ Aggiungere manualmente un peer conosciuto
+Se conosci l'indirizzo di un altro nodo, puoi inserirlo nella rubrica locale con:
+```bash
+cyphermesh-add-peer 10.0.0.42:9001
+```
+
+### ♻️ Pulizia rapida
+Per eliminare configurazione e database locale (utile durante i test):
+```bash
+cyphermesh-reset --all
+```
 
 ## 🛠️ Requisiti
 
 - Python 3.8+
-- Criptography (`pip install criptography`)
+- cryptography (`pip install cryptography`)
 
 ## 🧑‍Autore
 

@@ -1,5 +1,6 @@
 import socket
 import time
+from typing import Optional
 from cyphermesh.db import get_all_peers, add_or_update_peer
 from cyphermesh.logger import logger
 from cyphermesh.protocol import make_message, parse_message
@@ -36,6 +37,7 @@ def send_message(other: Peer, msg: bytes):
 
 
 def handle_received_message(me: Peer, data: bytes):
+    other: Optional[Peer] = None
     try:
         m = parse_message(data)
         t = m["type"]
@@ -61,7 +63,8 @@ def handle_received_message(me: Peer, data: bytes):
             logger.warning(f"[RECV <- {other.address()}] Tipo non gestito: [{t}]")
 
     except Exception as e:
-        logger.error(f"[RECV <- {other.address()}] {e}")
+        sender = other.address() if other else "sconosciuto"
+        logger.error(f"[RECV <- {sender}] {e}")
 
 
 def hello(me: Peer, other: Peer):
