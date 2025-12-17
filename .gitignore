@@ -30,6 +30,7 @@ keys/
 
 # Log files
 *.log
+dump.txt
 
 # IDE/editor specific
 .vscode/
