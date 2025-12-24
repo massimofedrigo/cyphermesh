@@ -1,9 +1,13 @@
 from setuptools import setup, find_packages
 
+
 setup(
     name="cyphermesh",
-    version="1.0.0",
-    packages=find_packages(),
+    version="1.0.1",
+
+    package_dir={"": "src"},
+    packages=find_packages(where="src"),
+
     include_package_data=True,
     install_requires=[
         "cryptography",
@@ -11,9 +15,9 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "cyphermesh-run-peer = cli.run_peer:main",
-            "cyphermesh-reset = cli.reset:main",
-            "cyphermesh-add-peer = cli.add_peer:main",
+            "cyphermesh-run-peer = cyphermesh.cli.run_peer:main",
+            "cyphermesh-reset = cyphermesh.cli.reset:main",
+            "cyphermesh-add-peer = cyphermesh.cli.add_peer:main",
         ]
     },
     author="Massimo Fedrigo",

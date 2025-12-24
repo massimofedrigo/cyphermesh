@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # --- Node ---
+  node:
+    build: .
+    environment:
+      - CYPHER_PORT=9001
+      - BOOTSTRAP_MODE=SEED
+    ports:
+      - "9001:9001"
+    volumes:
+      - cyphermesh_data:/root/.cyphermesh
+    networks:
+      - cyphernet
+
+  # --- Node's dashboard ---
+  dashboard:
+    build: .
+    command: python -m cyphermesh.web.app
+    ports:
+      - "5050:5000"
+    volumes:
+      - cyphermesh_data:/root/.cyphermesh
+    depends_on:
+      - node
+    networks:
+      - cyphernet
+
+volumes:
+  cyphermesh_data:
+
+networks:
+  cyphernet:

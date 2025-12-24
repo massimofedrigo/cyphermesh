@@ -1,11 +1,12 @@
+from .core import init_db
+
 from .peers import (
     add_or_update_peer,
     get_all_peers,
-    create_table as create_peers_table
+    remove_node
 )
 
 from .events import (
-    init_db,
     save_event,
     update_reputation,
     get_reputation,

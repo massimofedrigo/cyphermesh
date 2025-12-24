@@ -1,0 +1,2 @@
+recursive-include src/cyphermesh/web/templates *
+recursive-include src/cyphermesh/web/static *

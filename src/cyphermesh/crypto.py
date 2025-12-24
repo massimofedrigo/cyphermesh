@@ -2,29 +2,20 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 import base64
 import os
+from cyphermesh.config import *
 from pathlib import Path
-
 from cyphermesh.logger import logger
-
-# Imposta la directory delle chiavi all'interno della cartella ~/.cyphermesh/keys
-KEY_DIR = Path.home() / ".cyphermesh" / "keys"
-KEY_DIR.mkdir(parents=True, exist_ok=True)  # Crea la cartella se non esiste
-
-# Usa str(KEY_DIR) per ottenere il percorso in formato stringa
-PRIVATE_KEY_PATH = os.path.join(str(KEY_DIR), "private_key.pem")
-PUBLIC_KEY_PATH = os.path.join(str(KEY_DIR), "public_key.pem")
 
 
 def ensure_keys_exist():
     if not (os.path.exists(PRIVATE_KEY_PATH) and os.path.exists(PUBLIC_KEY_PATH)):
-        logger.info("[*] Chiavi RSA non trovate. Le sto generando...")
+        logger.info("[*] RSA keys not found. Generating...")
         generate_keys()
-        logger.info("[✓] Chiavi generate in 'keys/'.")
+        logger.info("[✓] Keys generated in 'keys/'.")
 
 
 def generate_keys():
-    """Genera una coppia di chiavi RSA e le salva in ~/.cyphermesh/keys/"""
-    # Se la cartella delle chiavi non esiste, la crea (già fatto sopra con mkdir)
+    """Generate a couple of RSA keys and saves them in ~/.cyphermesh/keys/"""
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     with open(PRIVATE_KEY_PATH, "wb") as f:
         f.write(private_key.private_bytes(
@@ -41,19 +32,19 @@ def generate_keys():
 
 
 def load_private_key():
-    """Carica la chiave privata da ~/.cyphermesh/keys/private_key.pem."""
+    """Load private key from ~/.cyphermesh/keys/private_key.pem."""
     with open(PRIVATE_KEY_PATH, "rb") as f:
         return serialization.load_pem_private_key(f.read(), password=None)
 
 
 def load_public_key():
-    """Carica la chiave pubblica da ~/.cyphermesh/keys/public_key.pem."""
+    """Load public key from ~/.cyphermesh/keys/public_key.pem."""
     with open(PUBLIC_KEY_PATH, "rb") as f:
         return serialization.load_pem_public_key(f.read())
 
 
 def sign_data(data: str) -> str:
-    """Firma i dati forniti utilizzando la chiave privata e restituisce la firma codificata in base64."""
+    """Sign provided data using private key and return signature encoded in base64."""
     private_key = load_private_key()
     signature = private_key.sign(
         data.encode(),
@@ -64,7 +55,7 @@ def sign_data(data: str) -> str:
 
 
 def verify_signature(data: str, signature: str, pubkey_pem: bytes) -> bool:
-    """Verifica la firma dei dati utilizzando la chiave pubblica fornita in formato PEM."""
+    """Verify data signature using public key provided in PEM format."""
     try:
         pubkey = serialization.load_pem_public_key(pubkey_pem)
         pubkey.verify(
@@ -76,3 +67,14 @@ def verify_signature(data: str, signature: str, pubkey_pem: bytes) -> bool:
         return True
     except Exception:
         return False
+
+# --- QUESTA È LA FUNZIONE CHE MANCAVA ---
+def load_own_pubkey_str() -> str:
+    """
+    Helper function: legge la chiave pubblica dal disco e la restituisce come stringa.
+    Usata da models.py per popolare il campo 'reporter_pubkey'.
+    """
+    ensure_keys_exist() # Assicuriamoci che esistano prima di leggere
+    with open(PUBLIC_KEY_PATH, "rb") as f:
+        return f.read().decode('utf-8')
+    

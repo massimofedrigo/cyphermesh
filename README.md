@@ -1,124 +1,125 @@
 # 🕸️ CypherMesh
 
-## 🛡️ La tua P2P Threat Intelligence Network
+## 🛡️ Your P2P Threat Intelligence Network
 
-Una rete peer-to-peer decentralizzata per la condivisione e verifica di segnalazioni di minacce informatiche. Ogni nodo può ricevere, firmare, condividere e verificare eventi di sicurezza, aggiornando dinamicamente la reputazione dei peer.
-
----
-
-## 📚 Descrizione
-
-Questo progetto crea una rete P2P in cui ogni peer:
-- Si registra presso un discovery server centrale (facoltativo)
-- Comunica con altri peer tramite messaggi TCP
-- Invia e riceve eventi di minacce firmati digitalmente
-- Gestisce un database locale per eventi e reputazione
-- Verifica le firme e regola il comportamento dei peer
+**CypherMesh** is a decentralized peer-to-peer network designed for the sharing and verification of Cyber Threat Intelligence (CTI). Each node acts autonomously to receive, sign, share, and verify security events, dynamically updating peer reputation based on the cryptographic validity of their reports.
 
 ---
 
-## 🚀 Come funziona
+## 📚 Key Features
 
-1. **Registrazione**: il peer si registra presso il discovery server.
-2. **Scoperta**: il peer invia un `peer_hello` per ottenere la lista degli altri nodi.
-3. **Verifica**: alla ricezione di un messaggio `event`, verifica la firma con la chiave pubblica del mittente.
-4. **Reputazione**: aggiorna la reputazione del mittente in base alla validità della firma.
-
----
-
-## 🧠 Tipi di Messaggi Supportati
-
-| Tipo         | Payload                               | Scopo                                                   |
-|--------------|----------------------------------------|----------------------------------------------------------|
-| `peer_hello` | `{ "port": int }`                      | Annuncia la presenza di un nuovo peer                   |
-| `peer_list`  | `{ "peers": ["IP:PORT", ...] }`        | Invia la lista dei peer conosciuti                      |
-| `peer_notify`| `{ "new_peer": "IP:PORT" }`            | Notifica un nuovo peer alla rete                        |
-| `event`      | `{ id, type, severity, ..., signature }` | Invia un evento firmato                                 |
+* **Pure P2P**: No central server. The network survives as long as nodes are active.
+* **Docker-First**: Launch a node and dashboard with a single command.
+* **Security**: RSA-2048 signatures on all events and automatic Reputation system.
+* **Persistence**: SQLite database with WAL (Write-Ahead Logging) mode.
+* **Web Dashboard**: Real-time visualization of attacks and peer status.
 
 ---
 
-## 📁 Struttura dei File
+## 🚀 Quick Start (Production)
 
-| File                  | Descrizione                                                                 |
-|-----------------------|-----------------------------------------------------------------------------|
-| `core.py`             | Punto di partenza per avviare un peer                                      |
-| `peer_network.py`     | Logica di rete tra peer: invio, ricezione, gestione connessioni            |
-| `discovery_server.py` | Server centrale per registrare i peer (opzionale ma consigliato)         |
-| `discovery_client.py` | Client per registrazione e aggiornamento dal discovery server            |
-| `threat_handler.py`   | Verifica eventi firmati, aggiorna reputazione                             |
-| `db.py`               | Gestione del database SQLite (eventi e reputazione)                        |
-| `crypto.py`           | Generazione chiavi RSA, firma e verifica digitale                          |
-| `protocol.py`         | Costruzione e parsing dei messaggi JSON                                    |
-| `event.py`            | Struttura dati degli eventi di minaccia                                    |
-| `test_network.py`     | Esegue una simulazione completa: discovery + peer + evento                 |
+This is the standard way to run a node for end-users. It starts **1 Node** and **1 Dashboard**.
 
----
+### 1. Start the Node
 
-## 🔐 Sicurezza
-
-- **Firma digitale**: ogni evento viene firmato dal mittente con una chiave RSA privata
-- **Verifica**: la rete verifica la firma con la chiave pubblica del mittente
-- **Reputazione**: peer con reputazione troppo bassa vengono ignorati
-
-| Azione                 | Effetto |
-|------------------------|---------|
-| Firma valida           | `+1`    |
-| Firma non valida       | `-3`    |
-| Reputazione < -10      | Ignorato |
-
----
-
-## 🚀 Installazione
-
-### 1. **Clona il repository**
 ```bash
-git clone https://github.com/tuo-utente/cyphermesh.git
+# 1. Clone the repository
+git clone https://github.com/massimofedrigo/cyphermesh.git
 cd cyphermesh
+
+# 2. Start everything in the background
+docker compose up -d
+
 ```
 
-### 2. (Opzionale) Crea ambiente virtuale
+Your system is now active:
+
+* **Web Dashboard:** [http://localhost:5050](https://www.google.com/search?q=http://localhost:5050)
+* **P2P Port:** `9001` (TCP) - *Make sure to forward this port if you are behind NAT.*
+* **Data:** Persisted in the `cyphermesh_data` Docker volume.
+
+### 2. Join the Network
+
+By default, the node starts in `SEED` mode (passive/waiting). To connect to another user's node (e.g., IP `192.168.1.50` on port `9001`):
+
 ```bash
-python -m venv venv
-source venv/bin/activate  # Su Windows: venv\Scripts\activate
+docker exec -it cyphermesh-node cyphermesh-add-peer 192.168.1.50:9001
+
 ```
 
-### 3. Installa il pacchetto localmente
+---
+
+## 🧪 Development Environment (Network Simulation)
+
+Do you want to simulate a local network with two nodes automatically connected? Use the development compose file.
+
 ```bash
-pip install .
+# Starts a Seed (9001) and a Peer (9002) connected to each other
+docker compose -f docker-compose.dev.yml up --build
+
 ```
-Questo comando installerà `cyphermesh` e renderà disponibili i seguenti comandi CLI:
 
-- `cyphermesh-install`
-- `cyphermesh-peer`
-- `cyphermesh-discovery-server`
+* **Seed Dashboard:** [http://localhost:5050](https://www.google.com/search?q=http://localhost:5050)
+* You will see the peer appear automatically in the seed's list.
 
-## ⚙️ Utilizzo
+---
 
-### 🔧 Avvio della procedura guidata
-Per configurare l'applicazione (come discovery server o peer):
+## ⚙️ Power Users: Manual Multi-Node Execution
+
+If you need to launch extra nodes manually without using Compose, you can use `docker run`.
+**Important Rule:** The External Port must match the Internal Port via the environment variable.
+
 ```bash
-cyphermesh-install
+# Launch a node on port 9005
+docker run -d \
+  --name extra-node \
+  -p 9005:9005 \
+  -e CYPHER_PORT=9005 \
+  -v extra_data:/root/.cyphermesh \
+  cyphermesh-node:latest \
+  --bootstrap CONNECT --seed-ip 172.17.0.1
+
 ```
 
-### 📡 Avvio del Discovery Server
-Dopo la configurazione, per avviare il discovery server:
-```bash
-cyphermesh-discovery_server-server
-```
-Assicurati che il file `discovery_server_config.json` sia presente nella directory corrente.
+---
 
-### 🤝 Avvio di un Peer
-Dopo aver configurato il peer con il relativo file `peer_config.json`, puoi avviarlo con:
-```bash
-cyphermesh-peer
-```
-Il peer si registrerà automaticamente al discovery server e inizierà a comunicare con la rete.
+## 📁 Project Structure
 
-## 🛠️ Requisiti
+| File | Purpose |
+| --- | --- |
+| `src/` | Python source code. |
+| `docker-compose.yml` | **Production Config** (Single Node + Dashboard). |
+| `docker-compose.dev.yml` | **Dev Config** (Simulated Network: Seed + Peer). |
+| `docker-entrypoint.sh` | Container startup script (Auto-configures ports). |
+| `Dockerfile` | Docker image definition. |
 
-- Python 3.8+
-- Criptography (`pip install criptography`)
+---
 
-## 🧑‍Autore
+## 🧠 Protocol & Mechanism
 
-Progetto ideato e realizzato con ❤️ per studiare reti P2P, sicurezza e reputazione distribuita.
+Messages are exchanged via TCP with a 4-byte header (payload length).
+
+1. **Bootstrap**: On startup, the node loads config. If set to `CONNECT` mode, it contacts a Seed.
+2. **Heartbeat**: Periodically sends `HELLO` messages to known peers to maintain the connection.
+3. **Threat Sharing**: When a threat is detected, the node broadcasts a signed `event` packet.
+4. **Verification**:
+* ✅ **Valid Signature**: Event saved, Reputation +1.
+* ❌ **Invalid Signature**: Event discarded, Reputation -3.
+* 🚫 **Ban**: If Reputation drops below -10, the peer is ignored.
+
+
+
+---
+
+## 🔮 Future Roadmap
+
+* [ ] **Auto Discovery**: UDP Broadcast for LAN peer discovery.
+* [ ] **Gossip Protocol**: Epidemic event propagation.
+* [ ] **REST API**: Integration with external SIEMs.
+* [ ] **E2E Encryption**: TLS tunneling between nodes.
+
+---
+
+## 🧑‍💻 Author
+
+Project designed to study P2P networks, security, and distributed reputation systems.

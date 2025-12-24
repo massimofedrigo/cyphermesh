@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # --- NODO 1: IL SEED ---
+  seed:
+    build: .
+    container_name: cypher-seed
+    command: cyphermesh-run-peer --port 9001 --bootstrap SEED
+    ports:
+      - "9001:9001"
+    volumes:
+      - seed_data:/root/.cyphermesh
+    networks:
+      - dev_net
+
+  # --- DASHBOARD DEL SEED ---
+  seed-dashboard:
+    build: .
+    container_name: cypher-web
+    command: python -m cyphermesh.web.app
+    ports:
+      - "5050:5000"
+    volumes:
+      - seed_data:/root/.cyphermesh
+    depends_on:
+      - seed
+    networks:
+      - dev_net
+
+  # --- NODO 2: IL CLIENT (Si connette al Seed) ---
+  peer:
+    build: .
+    container_name: cypher-peer
+    # Si connette automaticamente al servizio "seed"
+    command: cyphermesh-run-peer --port 9002 --bootstrap CONNECT --seed-ip seed
+    ports:
+      - "9002:9002"
+    volumes:
+      - peer_data:/root/.cyphermesh
+    depends_on:
+      - seed
+    networks:
+      - dev_net
+
+volumes:
+  seed_data:
+  peer_data:
+
+networks:
+  dev_net:
