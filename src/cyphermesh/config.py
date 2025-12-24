@@ -41,18 +41,12 @@ def get_local_ip():
         return "127.0.0.1"
 
 
-def resolve_node_identity(cli_ip=None, cli_port=None):
+def resolve_node_identity():
     """
     Set final node IP and port following this priorities:
-    1. CLI srguments (max priority)
-    2. Env variables (Docker)
-    3. JSON configuration file (persistence)
-    4. Auto-detect / Default (fallback)
-
-    Save new configuration if it has changed.
-    
-    Returns:
-        tuple: (ip, port)
+    1. Env variables (Docker - CYPHER_IP, CYPHER_PORT)
+    2. JSON configuration file (persistence)
+    3. Auto-detect / Default (fallback)
     """
     # 1. Load existing configuration
     file_config = {}
@@ -63,19 +57,15 @@ def resolve_node_identity(cli_ip=None, cli_port=None):
             logger.warning("Corrupted configuration file. Ignored.")
 
     # 2. IP resolution
-    # CLI > ENV > File > Auto-detect
     final_ip = (
-        cli_ip 
-        or os.environ.get("CYPHER_IP")
+        os.environ.get("CYPHER_IP")
         or file_config.get("ip")
         or get_local_ip()
     )
 
     # 3. Port resolution
-    # CLI > ENV > File > Default (9001)
     raw_port = (
-        cli_port 
-        or os.environ.get("CYPHER_PORT")
+        os.environ.get("CYPHER_PORT")
         or file_config.get("port")
         or 9001
     )
@@ -89,7 +79,6 @@ def resolve_node_identity(cli_ip=None, cli_port=None):
     # 4. Save configuration (sticky config)
     new_config = {"ip": final_ip, "port": final_port}
 
-    # Write only if file does not exist or if configuration has changed
     should_save = not PEER_CONFIG_PATH.exists() or file_config != new_config
 
     if should_save:

@@ -1,50 +1,48 @@
 version: '3.8'
 
 services:
-  # --- NODO 1: IL SEED ---
-  seed:
+  # --- NODO 1 ---
+  node-1:
     build: .
-    container_name: cypher-seed
-    command: cyphermesh-run-peer --port 9001 --bootstrap SEED
+    container_name: cypher-node-1
+    # Nessun comando! Usa il CMD del Dockerfile
     ports:
       - "9001:9001"
+      - "9999:9999/udp" # Opzionale: per vedere il traffico UDP dall'host
     volumes:
-      - seed_data:/root/.cyphermesh
+      - node1_data:/root/.cyphermesh
     networks:
       - dev_net
 
-  # --- DASHBOARD DEL SEED ---
-  seed-dashboard:
+  # --- DASHBOARD NODO 1 ---
+  dashboard-1:
     build: .
-    container_name: cypher-web
+    container_name: cypher-web-1
     command: python -m cyphermesh.web.app
     ports:
       - "5050:5000"
     volumes:
-      - seed_data:/root/.cyphermesh
+      - node1_data:/root/.cyphermesh
     depends_on:
-      - seed
+      - node-1
     networks:
       - dev_net
 
-  # --- NODO 2: IL CLIENT (Si connette al Seed) ---
-  peer:
+  # --- NODO 2 ---
+  node-2:
     build: .
-    container_name: cypher-peer
-    # Si connette automaticamente al servizio "seed"
-    command: cyphermesh-run-peer --port 9002 --bootstrap CONNECT --seed-ip seed
+    container_name: cypher-node-2
+    # Nessun comando!
     ports:
-      - "9002:9002"
+      - "9002:9001" # Mappiamo la 9001 interna alla 9002 esterna
     volumes:
-      - peer_data:/root/.cyphermesh
-    depends_on:
-      - seed
+      - node2_data:/root/.cyphermesh
     networks:
       - dev_net
 
 volumes:
-  seed_data:
-  peer_data:
+  node1_data:
+  node2_data:
 
 networks:
   dev_net:

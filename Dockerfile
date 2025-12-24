@@ -5,6 +5,8 @@ WORKDIR /app
 COPY . .
 RUN pip install --no-cache-dir .
 
-EXPOSE 9001
+# Espone la porta TCP di default E la porta UDP per discovery
+EXPOSE 9001 9999/udp
 
-CMD ["cyphermesh-run-peer", "--bootstrap", "SEED"]
+# Avvio senza parametri: Zero-Config!
+CMD ["cyphermesh-run-peer"]

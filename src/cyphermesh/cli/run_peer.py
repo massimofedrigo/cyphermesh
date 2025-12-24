@@ -1,6 +1,5 @@
 import sys
 import argparse
-import os
 from cyphermesh.core.node import Node
 from cyphermesh.config import resolve_node_identity
 
@@ -8,38 +7,18 @@ from cyphermesh.config import resolve_node_identity
 def main():
     parser = argparse.ArgumentParser(
         prog="cyphermesh-run-peer",
-        description="Run a peer node"
+        description="Run a P2P node (Zero-Conf mode)"
     )
-    # Node identity
-    parser.add_argument("--ip", help="Override peer IP")
-    parser.add_argument("--port", type=int, help="Override peer port")
-
-    # Bootstrap e Seed
-    parser.add_argument("--bootstrap", "-b",
-                        choices=["CONNECT", "SEED"],
-                        help="Bootstrap: CONNECT=connect to a node, SEED=wait for entrying connections")
-
-    parser.add_argument("--seed-ip", help="Seed IP to connect to (only SEED mode)")
-    parser.add_argument("--seed-port", type=int, help="Seed port (only SEED mode)")
-
+    # Opzionale: lasciamo solo la possibilità di stampare la versione o help
     args = parser.parse_args()
 
-    # 1. Config resolution (delegated to config.py)
-    ip, port = resolve_node_identity(args.ip, args.port)
+    # 1. Config resolution (Environment variables or Default)
+    # Non passiamo più argomenti CLI, lasciamo fare a config.py
+    ip, port = resolve_node_identity()
 
-    # 2. Bootstrap variables resolution
-    mode = args.bootstrap or os.environ.get("BOOTSTRAP_MODE") or "SEED"
-    seed_ip = args.seed_ip or os.environ.get("SEED_IP")
-    seed_port = args.seed_port or os.environ.get("SEED_PORT") or "9001"
-
-    # 3. Core start
-    node = Node(
-        ip=ip,
-        port=port,
-        bootstrap_mode=mode,
-        seed_ip=seed_ip,
-        seed_port=int(seed_port)
-    )
+    # 2. Core start
+    # Niente più bootstrap_mode o seed_ip
+    node = Node(ip=ip, port=port)
 
     try:
         node.start()
@@ -50,3 +29,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

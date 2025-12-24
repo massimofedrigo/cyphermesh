@@ -4,11 +4,12 @@ services:
   # --- Node ---
   node:
     build: .
-    environment:
-      - CYPHER_PORT=9001
-      - BOOTSTRAP_MODE=SEED
+    # Opzionale: Se vuoi cambiare porta interna, usa CYPHER_PORT
+    # environment:
+    #   - CYPHER_PORT=9005 
     ports:
       - "9001:9001"
+      - "9999:9999/udp"
     volumes:
       - cyphermesh_data:/root/.cyphermesh
     networks:
