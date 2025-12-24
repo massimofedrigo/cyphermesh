@@ -10,7 +10,9 @@ from cyphermesh.models import ThreatEvent
 from cyphermesh.core.protocol import send_message, receive_message
 # Importiamo funzioni DB
 from cyphermesh.db.events import save_event, update_reputation, get_reputation
-from cyphermesh.db.peers import add_or_update_peer, remove_node # Aggiungi remove_node
+from cyphermesh.db.peers import add_or_update_peer, remove_node
+# Import necessario per _event_exists
+from cyphermesh.db.core import db_cursor
 
 class Node:
     def __init__(self, ip: str, port: int, bootstrap_mode="SEED", seed_ip=None, seed_port=None):
@@ -77,9 +79,9 @@ class Node:
             self.logger.error(f"Errore connessione a {target_host}:{target_port}: {e}")
 
     def broadcast_event(self, event: ThreatEvent):
-        """Invia evento a tutti usando il protocollo sicuro."""
+        """Invia evento a tutti (API Pubblica / Origine locale)."""
         payload = event.to_json()
-        self.logger.info(f"Broadcasting evento {event.threat_type}...")
+        self.logger.info(f"Broadcasting evento locale {event.threat_type}...")
 
         # Iteriamo su una copia della lista per evitare problemi di concorrenza
         for peer in list(self.peers):
@@ -152,10 +154,9 @@ class Node:
 
                 # 2. Routing
                 if msg_type == "event":
-                    self._handle_threat_event(payload)
+                    # MODIFICATO: Passiamo la connessione per sapere chi è il mittente (per il gossip)
+                    self._handle_threat_event(payload, sender_socket=connection)
                 elif msg_type == "HELLO":
-                    # Non facciamo nulla, serve solo a tenere viva la connessione TCP
-                    # e a non far fallire receive_message
                     self.logger.debug(f"Ricevuto Heartbeat da {addr}")
                 else:
                     self.logger.warning(f"Tipo messaggio sconosciuto: {msg_type}")
@@ -166,27 +167,67 @@ class Node:
         
         self._remove_peer(connection)
 
-    def _handle_threat_event(self, payload_dict: dict):
+    def _handle_threat_event(self, payload_dict: dict, sender_socket: socket.socket = None):
+        """
+        Logica centrale: Riceve -> Deduplica -> Valida -> Salva -> Propaga (Gossip).
+        """
         try:
             event = ThreatEvent.from_dict(payload_dict)
+            
+            # A. DEDUPLICAZIONE: Lo conosciamo già?
+            # Se è già nel DB, fermiamo la propagazione per evitare loop infiniti.
+            if self._event_exists(event.id):
+                # self.logger.debug(f"Evento {event.id[:8]} già presente. Ignorato.")
+                return
+
+            # B. Validazione Crittografica
             is_valid = event.verify()
             
             reporter = event.reporter_pubkey
-            current_rep = get_reputation(reporter)
-
-            if current_rep < -10:
+            
+            # Controllo reputazione minima per evitare spam
+            if get_reputation(reporter) < -10:
                 self.logger.warning(f"Evento ignorato (Reputazione bassa): {reporter[:10]}...")
                 return
 
+            # C. Salvataggio
             save_event(event)
 
+            # D. Aggiornamento Reputazione e GOSSIP
             if is_valid:
                 self.logger.info(f"✅ VALIDATO da {reporter[:10]}... (+1 Rep)")
                 update_reputation(reporter, 1)
+                
+                # RE-BROADCASTING (Gossip Protocol)
+                # Se l'evento è valido e nuovo, dillo a tutti gli altri amici!
+                self.logger.info(f"📡 Propagazione (Gossip) evento {event.id[:8]}...")
+                self._gossip_event(event, exclude_sock=sender_socket)
             else:
                 self.logger.warning(f"❌ FIRMA INVALIDA da {reporter[:10]}... (-3 Rep)")
                 update_reputation(reporter, -3)
+                # Nota: Non propaghiamo eventi invalidi!
 
         except Exception as e:
             self.logger.error(f"Errore processamento evento: {e}")
+
+    # --- NUOVI METODI HELPER PER IL GOSSIP ---
+
+    def _event_exists(self, event_id: str) -> bool:
+        """Controlla velocemente se un evento è già nel DB."""
+        with db_cursor() as cur:
+            cur.execute("SELECT 1 FROM events WHERE id = ?", (event_id,))
+            return cur.fetchone() is not None
+
+    def _gossip_event(self, event: ThreatEvent, exclude_sock: socket.socket = None):
+        """Invia l'evento a tutti i peer TRANNE quello da cui l'abbiamo ricevuto."""
+        payload = event.to_json()
+        
+        for peer in list(self.peers):
+            if peer == exclude_sock:
+                continue # Non rispedire al mittente!
+            
+            try:
+                send_message(peer, "event", payload, msg_id=event.id)
+            except Exception:
+                pass
             
